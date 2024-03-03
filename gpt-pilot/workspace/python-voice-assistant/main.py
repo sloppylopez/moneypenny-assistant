@@ -4,6 +4,11 @@ import pyaudio
 from six.moves import queue
 from google.cloud import speech
 from google.oauth2 import service_account
+import subprocess   
+import sys
+import runpy
+from os.path import dirname, abspath
+
 
 # Audio recording parameters
 RATE = 16000
@@ -63,25 +68,42 @@ credentials = service_account.Credentials.from_service_account_file(
     '/home/octo/Work/Creds/assitant-416116-698a6c4c3111.json')  # Update this path
 client = speech.SpeechClient(credentials=credentials)
 
+import subprocess
+
 def listen_print_loop(responses):
     """Iterates through server responses and prints them."""
     for response in responses:
         if not response.results:
             continue
 
-        # Grab the first result from the list of results.
         result = response.results[0]
 
-        # Check if the first alternative is available and the result is final.
         if result.alternatives and result.is_final:
             transcript = result.alternatives[0].transcript
             print(u"\nFinal Transcript: {}".format(transcript))
 
-            # Here, you can add logic to act on the final transcript.
-            if "hello world" in transcript.lower():
-                print("Hello World to you too!")
-                # Since it's a continuous listening loop, we don't return/break here,
-                # but you can set a flag to stop listening if needed.
+            # Detect "create a project named" command.
+            if "create a project named" in transcript.lower():
+                # Extract the project name from the transcript.
+                project_name = transcript.lower().split("create a project named")[-1].strip()
+                print(f"Creating project: {project_name}")
+                # runpy.run_path("/home/octo/Work/gpt-pilot/pilot/main.py")
+                script_path = "/home/octo/Work/gpt-pilot/pilot/main.py" # This to to able to debug a different main.py and have correct path relative to that file
+                script_dir = dirname(script_path)
+
+                if script_dir not in sys.path:
+                    sys.path.insert(0, script_dir)
+
+                runpy.run_path(script_path)
+                # Define the path to your shell script and include the project name as an argument.
+                # script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts", "gpt-pilot-start")
+                # try:
+                #     # Call the shell script with the project name.
+                #     subprocess.run([script_path, project_name], check=True)
+                #     print("Shell script executed successfully.")
+                # except subprocess.CalledProcessError as e:
+                #     print(f"Error executing shell script: {e}")
+
 
 
 def main():
